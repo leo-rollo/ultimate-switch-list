@@ -410,6 +410,7 @@ const RAWG_KEY = "98bd2933ccba4ea3b0815b21bd27e4ee";
 // ════════════════════════════════════════════════════════════
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+db.settings({ experimentalForceLongPolling: true, merge: true });
 const gamesCol = db.collection('games');
 
 // ════════════════════════════════════════════════════════════
@@ -533,8 +534,8 @@ function clearQ() {
 
 async function search(q) {
   const wrap = document.getElementById('results-wrap');
-  if (RAWG_KEY === 'SUA_RAWG_KEY_AQUI') {
-    wrap.innerHTML = '<div class="results-msg">⚠️ Chave RAWG não configurada. Adicione sua chave no arquivo index.html.</div>';
+  if (!RAWG_KEY || RAWG_KEY === 'SUA_RAWG_KEY_AQUI') {
+    wrap.innerHTML = '<div class="results-msg">⚠️ Chave RAWG não configurada.</div>';
     wrap.classList.add('show');
     return;
   }
