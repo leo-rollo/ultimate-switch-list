@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Switch List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── VARS & RESET ─────────────────────────────────────────── */
+:root {
+  --red:      #E4000F;
+  --red-d:    #B8000C;
+  --bg:       #F2F2F2;
+  --surface:  #FFFFFF;
+  --text:     #1A1A1A;
+  --muted:    #767676;
+  --border:   #E0E0E0;
+  --shadow:   0 2px 8px rgba(0,0,0,.10);
+  --shadow-h: 0 6px 20px rgba(0,0,0,.16);
+  --radius:   12px;
+  --c-main:   #E4000F;
+  --c-cozy:   #5B8DD9;
+  --c-quatro: #F5A623;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { max-width: 100%; overflow-x: hidden; }
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HEADER ──────────────────────────────────────────────── */
+header {
+  background: var(--red);
+  color: #fff;
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; }
+.logo-icon {
+  width: 34px; height: 34px; background: #fff; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+}
+.logo-sub { font-size: .65rem; font-weight: 700; opacity: .8; letter-spacing: .05em; display: block; margin-top: 1px; }
+.rt-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .7rem; font-weight: 700; color: rgba(255,255,255,.85);
+}
+.rt-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #4CAF50;
+  animation: blink 2.5s infinite;
+}
+.rt-dot.off { background: #aaa; animation: none; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── SEARCH AREA ─────────────────────────────────────────── */
+.search-area {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 0;
+}
+.search-row {
+  max-width: 680px;
+  margin: 0 auto;
+  position: relative;
+}
+.search-row input {
+  width: 100%;
+  padding: 11px 42px 11px 18px;
+  border: 2px solid var(--border);
+  border-radius: 99px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .92rem;
+  font-weight: 700;
+  outline: none;
+  background: var(--bg);
+  transition: border-color .2s, background .2s;
+}
+.search-row input:focus { border-color: var(--red); background: #fff; }
+.search-row input::placeholder { color: var(--muted); }
+.search-x {
+  position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; font-size: 1rem;
+  color: var(--muted); cursor: pointer; display: none;
+}
+.search-x.show { display: block; }
+
+#results-wrap {
+  max-width: 680px;
+  margin: 10px auto 0;
+  padding-bottom: 14px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+#results-wrap.show { display: flex; }
+.results-msg { text-align: center; color: var(--muted); font-weight: 700; font-size: .88rem; padding: 16px 0; }
+
+/* ── SEARCH CARD ─────────────────────────────────────────── */
+.s-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: box-shadow .18s;
+}
+.s-card:hover { box-shadow: var(--shadow-h); }
+.s-card-top {
+  display: flex;
+  cursor: pointer;
+  user-select: none;
+}
+.s-cover {
+  width: 96px; min-width: 96px; height: 76px;
+  object-fit: cover; background: var(--border); flex-shrink: 0;
+}
+.s-cover-ph {
+  width: 96px; min-width: 96px; height: 76px;
+  background: var(--border); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1.8rem; flex-shrink: 0;
+}
+.s-info { padding: 10px 12px; flex: 1; min-width: 0; }
+.s-title {
+  font-size: .9rem; font-weight: 800; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.s-meta { font-size: .72rem; color: var(--muted); font-weight: 700; }
+.s-desc {
+  display: none; font-size: .8rem; color: var(--muted);
+  font-weight: 600; line-height: 1.6;
+  padding: 8px 12px 10px 108px;
+  border-top: 1px solid var(--border);
+}
+.s-desc.open { display: block; }
+.s-actions { padding: 6px 12px 10px 108px; display: flex; align-items: center; gap: 8px; }
+
+/* ── BUTTONS ─────────────────────────────────────────────── */
+.btn {
+  font-family: 'Nunito', sans-serif; font-weight: 800;
+  font-size: .78rem; padding: 6px 16px;
+  border-radius: 99px; border: none; cursor: pointer;
+  transition: transform .15s, opacity .15s; white-space: nowrap;
+}
+.btn:active { transform: scale(.96); }
+.btn-add    { background: var(--red); color: #fff; }
+.btn-add:hover { background: var(--red-d); }
+.btn-rem    { background: #fff; color: var(--red); border: 2px solid var(--red); }
+.btn-rem:hover { background: #ffe8e8; }
+.btn-ghost  { background: var(--bg); color: var(--muted); border: 2px solid var(--border); }
+.btn-ghost:hover { border-color: #aaa; color: var(--text); }
+.btn-lg { font-size: .92rem; padding: 12px 18px; border-radius: 10px; text-align: left; width: 100%; display: flex; align-items: center; gap: 10px; color: #fff; }
+.btn-lg.main-c  { background: var(--c-main); }
+.btn-lg.cozy-c  { background: var(--c-cozy); }
+.btn-lg.quatro-c{ background: var(--c-quatro); }
+.btn-lg:hover { opacity: .9; transform: scale(1.01); }
+
+/* ── POPUPS ──────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.overlay.open { display: flex; }
+.popup {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 26px 22px;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.28);
+  animation: pop .18s ease;
+}
+@keyframes pop { from{transform:scale(.9);opacity:0} to{transform:scale(1);opacity:1} }
+.popup h3 { font-size: 1rem; font-weight: 900; margin-bottom: 5px; }
+.popup-sub { font-size: .82rem; color: var(--muted); font-weight: 700; margin-bottom: 16px; }
+.popup-list-btns { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.popup-cancel { width: 100%; text-align: center; background: none; border: none; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .85rem; color: var(--muted); cursor: pointer; padding: 5px; }
+.popup-cancel:hover { color: var(--text); }
+.confirm-body { text-align: center; }
+.confirm-body p { font-size: .87rem; color: var(--muted); font-weight: 600; line-height: 1.55; margin-bottom: 18px; }
+.confirm-body strong { color: var(--text); font-weight: 900; }
+.confirm-row { display: flex; gap: 10px; }
+.confirm-row .btn { flex: 1; text-align: center; font-size: .85rem; padding: 10px; }
+
+/* ── MAIN COLUMNS ────────────────────────────────────────── */
+.main { max-width: 1300px; margin: 0 auto; padding: 20px 14px 48px; }
+.cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+@media (min-width: 600px) and (max-width: 860px) { .cols { grid-template-columns: 1fr 1fr; } }
+
+/* ── COLUMN ──────────────────────────────────────────────── */
+.col { background: var(--surface); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.col-head {
+  padding: 14px 16px;
+  color: #fff; font-weight: 900; font-size: .92rem;
+  letter-spacing: .05em; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.col-head.main-c   { background: var(--c-main); }
+.col-head.cozy-c   { background: var(--c-cozy); }
+.col-head.quatro-c { background: var(--c-quatro); }
+.col-count {
+  background: rgba(255,255,255,.28); border-radius: 99px;
+  padding: 2px 10px; font-size: .75rem; font-weight: 800;
+}
+.col-body { padding: 10px; min-height: 100px; display: flex; flex-direction: column; gap: 9px; }
+.col-empty { text-align: center; color: var(--muted); font-size: .8rem; font-weight: 700; padding: 22px 10px; }
+
+/* ── GAME CARD (na lista) ────────────────────────────────── */
+.g-card {
+  border-radius: 10px; border: 2px solid var(--border);
+  background: #fff; overflow: hidden;
+  cursor: pointer; transition: box-shadow .18s;
+}
+.g-card:hover { box-shadow: var(--shadow-h); }
+.g-card.dl { background: var(--red); border-color: var(--red); }
+.g-card.dl .g-title  { color: #fff; }
+.g-card.dl .g-desc   { color: rgba(255,255,255,.8); }
+.g-card.dl .g-footer { background: rgba(0,0,0,.15); }
+.g-card.dl .btn-dl   { background: rgba(255,255,255,.2); color: #fff; border-color: rgba(255,255,255,.35); }
+.g-card.dl .btn-rm   { color: rgba(255,255,255,.75); }
+
+.g-cover {
+  width: 100%; height: 106px; object-fit: cover;
+  display: block; background: var(--border);
+}
+.g-cover-ph {
+  width: 100%; height: 106px; background: var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 2.4rem;
+}
+.g-title { padding: 8px 10px 3px; font-size: .82rem; font-weight: 800; line-height: 1.25; }
+.g-desc {
+  display: none; padding: 0 10px 8px;
+  font-size: .75rem; color: var(--muted); font-weight: 600; line-height: 1.55;
+}
+.g-desc.open { display: block; }
+.g-footer {
+  padding: 6px 10px 10px; background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.btn-dl {
+  font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .72rem;
+  padding: 5px 13px; border-radius: 99px;
+  border: 2px solid var(--border); background: #fff; color: var(--muted);
+  cursor: pointer; transition: all .18s;
+}
+.btn-dl.on { color: var(--red); border-color: var(--red); }
+.btn-dl:hover { border-color: #999; }
+.btn-rm {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-weight: 700;
+  font-size: .72rem; color: var(--muted);
+  padding: 4px 6px; border-radius: 6px; transition: color .18s;
+}
+.btn-rm:hover { color: var(--red); }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 22px; left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: #1a1a1a; color: #fff;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .86rem;
+  padding: 11px 22px; border-radius: 99px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.3);
+  z-index: 300; transition: transform .28s ease; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎮</div>
+    <div>
+      Ultimate Switch List
+      <span class="logo-sub">PRINCIPAIS · COZY · QUATROQUEIJOS</span>
+    </div>
+  </div>
+  <div class="rt-badge">
+    <span class="rt-dot off" id="rt-dot"></span>
+    <span id="rt-label">Conectando...</span>
+  </div>
+</header>
+
+<!-- SEARCH -->
+<div class="search-area">
+  <div class="search-row">
+    <input type="text" id="q" placeholder="🔍  Buscar jogo para Nintendo Switch..." autocomplete="off" oninput="onInput(this.value)">
+    <button class="search-x" id="sx" onclick="clearQ()">✕</button>
+  </div>
+  <div id="results-wrap"></div>
+</div>
+
+<!-- COLUMNS -->
+<div class="main">
+  <div class="cols">
+    <div class="col">
+      <div class="col-head main-c">🎮 Principais <span class="col-count" id="n-principais">0</span></div>
+      <div class="col-body" id="list-principais"><div class="col-empty">Nenhum jogo ainda</div></div>
+    </div>
+    <div class="col">
+      <div class="col-head cozy-c">🌿 Cozy <span class="col-count" id="n-cozy">0</span></div>
+      <div class="col-body" id="list-cozy"><div class="col-empty">Nenhum jogo ainda</div></div>
+    </div>
+    <div class="col">
+      <div class="col-head quatro-c">🧀 Quatroqueijos <span class="col-count" id="n-quatroqueijos">0</span></div>
+      <div class="col-body" id="list-quatroqueijos"><div class="col-empty">Nenhum jogo ainda</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP: ESCOLHER LISTA -->
+<div class="overlay" id="pop-add" onclick="closePop('pop-add')">
+  <div class="popup" onclick="event.stopPropagation()">
+    <h3>Adicionar à lista</h3>
+    <div class="popup-sub" id="pop-add-name">—</div>
+    <div class="popup-list-btns">
+      <button class="btn btn-lg main-c"   onclick="doAdd('principais')">🎮 Principais</button>
+      <button class="btn btn-lg cozy-c"   onclick="doAdd('cozy')">🌿 Cozy</button>
+      <button class="btn btn-lg quatro-c" onclick="doAdd('quatroqueijos')">🧀 Quatroqueijos</button>
+    </div>
+    <button class="popup-cancel" onclick="closePop('pop-add')">Cancelar</button>
+  </div>
+</div>
+
+<!-- POPUP: CONFIRMAR REMOÇÃO -->
+<div class="overlay" id="pop-rem" onclick="closePop('pop-rem')">
+  <div class="popup" onclick="event.stopPropagation()">
+    <div class="confirm-body">
+      <h3 style="margin-bottom:10px">Remover da lista?</h3>
+      <p>Tem certeza que quer remover<br><strong id="pop-rem-name">—</strong><br>da lista?</p>
+      <div class="confirm-row">
+        <button class="btn btn-ghost" onclick="closePop('pop-rem')">Cancelar</button>
+        <button class="btn btn-rem"   onclick="doRemove()">Remover</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE SDK (compat — funciona sem bundler) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// ① SUBSTITUA AQUI com suas credenciais do Firebase
+// ════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyD22z57B7JMSGxz98lpjc7u3dTFzBBQvLM",
+  authDomain:        "ultimate-switch-list.firebaseapp.com",
+  projectId:         "ultimate-switch-list",
+  storageBucket:     "ultimate-switch-list.firebasestorage.app",
+  messagingSenderId: "50151813128",
+  appId:             "1:50151813128:web:7403b7f62c0935edaee1bd"
+};
+
+// ② SUBSTITUA com sua chave do rawg.io
+const RAWG_KEY = "98bd2933ccba4ea3b0815b21bd27e4ee";
+
+// ════════════════════════════════════════════════════════════
+// FIREBASE INIT
+// ════════════════════════════════════════════════════════════
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const gamesCol = db.collection('games');
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+let games        = {};   // { docId: { rawgId, title, cover, desc, lista, downloaded } }
+let pending      = null; // jogo aguardando add
+let pendingRemId = null; // rawg_id aguardando remoção
+let openDescs    = new Set(); // docIds com descrição expandida na lista
+let descCache    = {};   // rawgId → descrição (cache local)
+let searchTimer  = null;
+
+// ════════════════════════════════════════════════════════════
+// REALTIME LISTENER — onSnapshot
+// Qualquer alteração no Firestore chega aqui para os dois usuários
+// ════════════════════════════════════════════════════════════
+gamesCol.onSnapshot(
+  snap => {
+    games = {};
+    snap.forEach(doc => { games[doc.id] = doc.data(); });
+    renderAll();
+    setRt(true);
+  },
+  err => {
+    console.error(err);
+    setRt(false);
+  }
+);
+
+function setRt(on) {
+  document.getElementById('rt-dot').className   = 'rt-dot' + (on ? '' : ' off');
+  document.getElementById('rt-label').textContent = on ? 'Ao vivo' : 'Reconectando...';
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER COLUNAS
+// ════════════════════════════════════════════════════════════
+function renderAll() {
+  ['principais','cozy','quatroqueijos'].forEach(lista => {
+    const items  = Object.entries(games).filter(([,g]) => g.lista === lista);
+    const listEl = document.getElementById('list-' + lista);
+    const cntEl  = document.getElementById('n-' + lista);
+    cntEl.textContent = items.length;
+
+    if (!items.length) {
+      listEl.innerHTML = '<div class="col-empty">Nenhum jogo ainda</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    items.forEach(([docId, g]) => {
+      const isDl   = !!g.downloaded;
+      const isOpen = openDescs.has(docId);
+
+      const card = document.createElement('div');
+      card.className = 'g-card' + (isDl ? ' dl' : '');
+
+      card.innerHTML =
+        (g.cover_url
+          ? '<img class="g-cover" src="' + h(g.cover_url) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+          : '<div class="g-cover-ph">🎮</div>') +
+        '<div class="g-title">' + h(g.title) + '</div>' +
+        (g.description
+          ? '<div class="g-desc' + (isOpen ? ' open' : '') + '" id="gd-' + docId + '">' + h(g.description) + '</div>'
+          : '') +
+        '<div class="g-footer">' +
+          '<button class="btn-dl' + (isDl ? ' on' : '') + '" onclick="event.stopPropagation();toggleDl(\'' + docId + '\',' + isDl + ')">' +
+            (isDl ? '✓ Baixado' : '⬇ Baixado') +
+          '</button>' +
+          '<button class="btn-rm" onclick="event.stopPropagation();openRem(\'' + docId + '\',\'' + h(g.title) + '\')">Remover</button>' +
+        '</div>';
+
+      card.addEventListener('click', () => toggleDesc(docId));
+      listEl.appendChild(card);
+    });
+  });
+}
+
+function toggleDesc(docId) {
+  const el = document.getElementById('gd-' + docId);
+  if (!el) return;
+  if (openDescs.has(docId)) { openDescs.delete(docId); el.classList.remove('open'); }
+  else                       { openDescs.add(docId);    el.classList.add('open'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// SEARCH (RAWG)
+// ════════════════════════════════════════════════════════════
+function onInput(val) {
+  document.getElementById('sx').classList.toggle('show', val.length > 0);
+  clearTimeout(searchTimer);
+  const wrap = document.getElementById('results-wrap');
+  if (!val.trim()) { wrap.classList.remove('show'); wrap.innerHTML = ''; return; }
+  searchTimer = setTimeout(() => search(val.trim()), 420);
+}
+
+function clearQ() {
+  document.getElementById('q').value = '';
+  document.getElementById('sx').classList.remove('show');
+  const wrap = document.getElementById('results-wrap');
+  wrap.classList.remove('show');
+  wrap.innerHTML = '';
+}
+
+async function search(q) {
+  const wrap = document.getElementById('results-wrap');
+  wrap.innerHTML = '<div class="results-msg">Buscando...</div>';
+  wrap.classList.add('show');
+  try {
+    const url = 'https://api.rawg.io/api/games'
+      + '?key=' + RAWG_KEY
+      + '&search=' + encodeURIComponent(q)
+      + '&platforms=7'           // 7 = Nintendo Switch
+      + '&page_size=6'
+      + '&exclude_additions=true';
+    const res  = await fetch(url);
+    const data = await res.json();
+    const hits = data.results || [];
+    if (!hits.length) { wrap.innerHTML = '<div class="results-msg">Nenhum jogo encontrado.</div>'; return; }
+    wrap.innerHTML = '';
+    hits.forEach(hit => wrap.appendChild(buildSearchCard(hit)));
+  } catch(e) {
+    wrap.innerHTML = '<div class="results-msg">Erro na busca. Verifique a chave RAWG.</div>';
+  }
+}
+
+function buildSearchCard(hit) {
+  // verifica se jogo já está em alguma lista
+  const inList = Object.values(games).find(g => g.rawg_id === hit.id);
+  const year   = (hit.released || '').slice(0, 4);
+
+  const card   = document.createElement('div');
+  card.className = 's-card';
+  card.id = 'sc-' + hit.id;
+
+  card.innerHTML =
+    '<div class="s-card-top" onclick="toggleSDesc(' + hit.id + ')">' +
+      (hit.background_image
+        ? '<img class="s-cover" src="' + h(hit.background_image) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+        : '<div class="s-cover-ph">🎮</div>') +
+      '<div class="s-info">' +
+        '<div class="s-title">' + h(hit.name) + '</div>' +
+        '<div class="s-meta">' + (year ? year + ' · ' : '') + 'Nintendo Switch</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="s-desc" id="sd-' + hit.id + '">Carregando...</div>' +
+    '<div class="s-actions" id="sa-' + hit.id + '">' +
+      buildSearchBtn(hit, inList) +
+    '</div>';
+
+  return card;
+}
+
+function buildSearchBtn(hit, inList) {
+  if (inList) {
+    return '<button class="btn btn-rem" onclick="openRemFromSearch(' + hit.id + ',\'' + h(hit.name) + '\')">'
+         + 'Retirar da lista</button>';
+  }
+  return '<button class="btn btn-add" onclick="openAdd(' + hit.id + ',\'' + h(hit.name) + '\',\''
+       + h(hit.background_image || '') + '\')">'
+       + '+ Adicionar à lista</button>';
+}
+
+async function toggleSDesc(rawgId) {
+  const el = document.getElementById('sd-' + rawgId);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (!el.classList.contains('open')) return;
+  if (descCache[rawgId]) { el.textContent = descCache[rawgId]; return; }
+  try {
+    const res  = await fetch('https://api.rawg.io/api/games/' + rawgId + '?key=' + RAWG_KEY);
+    const data = await res.json();
+    const raw  = (data.description_raw || '').trim();
+    descCache[rawgId] = raw
+      ? raw.slice(0, 500) + (raw.length > 500 ? '…' : '')
+      : 'Sem descrição disponível.';
+  } catch { descCache[rawgId] = 'Sem descrição disponível.'; }
+  el.textContent = descCache[rawgId];
+}
+
+// ════════════════════════════════════════════════════════════
+// ADD
+// ════════════════════════════════════════════════════════════
+function openAdd(rawgId, name, cover) {
+  pending = { rawgId, name, cover };
+  document.getElementById('pop-add-name').textContent = name;
+  document.getElementById('pop-add').classList.add('open');
+}
+
+async function doAdd(lista) {
+  if (!pending) return;
+  closePop('pop-add');
+
+  // busca descrição se ainda não tiver em cache
+  let desc = descCache[pending.rawgId] || '';
+  if (!desc) {
+    try {
+      const res  = await fetch('https://api.rawg.io/api/games/' + pending.rawgId + '?key=' + RAWG_KEY);
+      const data = await res.json();
+      const raw  = (data.description_raw || '').trim();
+      desc = raw.slice(0, 600);
+      descCache[pending.rawgId] = desc || 'Sem descrição disponível.';
+    } catch { desc = ''; }
+  }
+
+  try {
+    // Se já existe um doc com esse rawg_id, atualiza a lista; senão cria
+    const existing = Object.entries(games).find(([,g]) => g.rawg_id === pending.rawgId);
+    if (existing) {
+      await gamesCol.doc(existing[0]).update({ lista, downloaded: false });
+    } else {
+      await gamesCol.add({
+        rawg_id:     pending.rawgId,
+        title:       pending.name,
+        cover_url:   pending.cover,
+        description: desc,
+        lista,
+        downloaded:  false,
+        created_at:  firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    showToast('✓ Adicionado a ' + lista.charAt(0).toUpperCase() + lista.slice(1));
+  } catch(e) {
+    console.error(e);
+    showToast('Erro ao adicionar. Tente novamente.');
+  }
+
+  // Atualiza botão do card de busca
+  refreshSearchBtn(pending.rawgId, pending.name, pending.cover);
+  pending = null;
+}
+
+// ════════════════════════════════════════════════════════════
+// REMOVE
+// ════════════════════════════════════════════════════════════
+function openRem(docId, name) {
+  pendingRemId = { docId, fromSearch: false };
+  document.getElementById('pop-rem-name').textContent = name;
+  document.getElementById('pop-rem').classList.add('open');
+}
+
+function openRemFromSearch(rawgId, name) {
+  pendingRemId = { rawgId, fromSearch: true };
+  document.getElementById('pop-rem-name').textContent = name;
+  document.getElementById('pop-rem').classList.add('open');
+}
+
+async function doRemove() {
+  closePop('pop-rem');
+  if (!pendingRemId) return;
+  try {
+    if (pendingRemId.fromSearch) {
+      // acha o docId pelo rawg_id
+      const entry = Object.entries(games).find(([,g]) => g.rawg_id === pendingRemId.rawgId);
+      if (entry) await gamesCol.doc(entry[0]).delete();
+      refreshSearchBtn(pendingRemId.rawgId, '', '');
+    } else {
+      await gamesCol.doc(pendingRemId.docId).delete();
+    }
+    showToast('Jogo removido da lista');
+  } catch(e) {
+    showToast('Erro ao remover.');
+  }
+  pendingRemId = null;
+}
+
+// ════════════════════════════════════════════════════════════
+// TOGGLE DOWNLOADED
+// ════════════════════════════════════════════════════════════
+async function toggleDl(docId, current) {
+  try {
+    await gamesCol.doc(docId).update({ downloaded: !current });
+  } catch(e) { showToast('Erro ao atualizar.'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+function closePop(id) { document.getElementById(id).classList.remove('open'); }
+
+function refreshSearchBtn(rawgId, name, cover) {
+  // Aguarda onSnapshot atualizar `games`, depois re-renderiza o botão
+  setTimeout(() => {
+    const actionsEl = document.getElementById('sa-' + rawgId);
+    if (!actionsEl) return;
+    const inList = Object.values(games).find(g => g.rawg_id === rawgId);
+    const fakeHit = { id: rawgId, name, background_image: cover };
+    actionsEl.innerHTML = buildSearchBtn(fakeHit, inList);
+  }, 600);
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Escapa HTML para prevenir XSS
+function h(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
