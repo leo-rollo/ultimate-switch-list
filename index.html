@@ -426,22 +426,37 @@ let searchTimer  = null;
 // REALTIME LISTENER — onSnapshot
 // Qualquer alteração no Firestore chega aqui para os dois usuários
 // ════════════════════════════════════════════════════════════
-gamesCol.onSnapshot(
-  snap => {
-    games = {};
-    snap.forEach(doc => { games[doc.id] = doc.data(); });
-    renderAll();
-    setRt(true);
-  },
-  err => {
-    console.error(err);
-    setRt(false);
-  }
-);
+let snapshotUnsub = null;
 
-function setRt(on) {
-  document.getElementById('rt-dot').className   = 'rt-dot' + (on ? '' : ' off');
-  document.getElementById('rt-label').textContent = on ? 'Ao vivo' : 'Reconectando...';
+function startSnapshot() {
+  if (snapshotUnsub) snapshotUnsub();
+  snapshotUnsub = gamesCol.onSnapshot(
+    snap => {
+      games = {};
+      snap.forEach(doc => { games[doc.id] = doc.data(); });
+      renderAll();
+      setRt(true);
+    },
+    err => {
+      console.error('Firestore error:', err.code, err.message);
+      setRt(false, err.code);
+      // Retry after 5s
+      setTimeout(startSnapshot, 5000);
+    }
+  );
+}
+
+startSnapshot();
+
+function setRt(on, errCode) {
+  document.getElementById('rt-dot').className = 'rt-dot' + (on ? '' : ' off');
+  if (on) {
+    document.getElementById('rt-label').textContent = 'Ao vivo';
+  } else if (errCode === 'permission-denied' || errCode === 'PERMISSION_DENIED') {
+    document.getElementById('rt-label').textContent = 'Erro: regras Firestore';
+  } else {
+    document.getElementById('rt-label').textContent = 'Reconectando...';
+  }
 }
 
 // ════════════════════════════════════════════════════════════
