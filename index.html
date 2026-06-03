@@ -227,32 +227,20 @@ header {
   cursor: pointer; transition: box-shadow .18s;
 }
 .g-card:hover { box-shadow: var(--shadow-h); }
-.g-card.dl { background: var(--red); border-color: var(--red); }
-.g-card.dl .g-title  { color: #fff; }
+.g-card.dl { background: linear-gradient(135deg, #00C8FF 0%, #1a1a2e 40%, #1a1a2e 60%, #FF3C28 100%); border-color: #00C8FF; }
+.g-card.dl .g-title  { color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
 .g-card.dl .g-desc   { color: rgba(255,255,255,.8); }
-.g-card.dl .g-footer { background: rgba(0,0,0,.15); }
-.g-card.dl .btn-dl   { background: rgba(255,255,255,.2); color: #fff; border-color: rgba(255,255,255,.35); }
+.g-card.dl .g-footer { background: rgba(0,0,0,.25); }
+.g-card.dl .btn-dl   { background: rgba(255,255,255,.2); color: #fff; border-color: rgba(255,255,255,.4); }
 .g-card.dl .btn-rm   { color: rgba(255,255,255,.75); }
+.g-card.dl .g-cover  { opacity: .85; }
 
-.g-cover-wrap {
-  width: 100%; height: 120px;
-  display: flex; align-items: stretch; overflow: hidden;
-}
-.g-cover-jl {
-  width: 10px; flex-shrink: 0; background: #00C8FF;
-  border-radius: 0;
-}
-.g-cover-jr {
-  width: 10px; flex-shrink: 0; background: #FF3C28;
-  border-radius: 0;
-}
 .g-cover {
-  flex: 1; height: 120px; object-fit: contain;
-  display: block; background: #0f0f1a;
-  align-self: center;
+  width: 100%; height: 120px; object-fit: cover;
+  display: block; background: var(--border);
 }
 .g-cover-ph {
-  flex: 1; height: 120px; background: #0f0f1a;
+  width: 100%; height: 120px; background: var(--border);
   display: flex; align-items: center; justify-content: center; font-size: 2.4rem;
 }
 .g-title { padding: 8px 10px 3px; font-size: .82rem; font-weight: 800; line-height: 1.25; }
@@ -404,7 +392,7 @@ const firebaseConfig = {
 };
 
 // ② SUBSTITUA com sua chave do rawg.io
-const RAWG_KEY = "SUA_RAWG_KEY_AQUI";
+const RAWG_KEY = "98bd2933ccba4ea3b0815b21bd27e4ee";
 
 // ════════════════════════════════════════════════════════════
 // FIREBASE INIT
@@ -469,11 +457,9 @@ function renderAll() {
       card.className = 'g-card' + (isDl ? ' dl' : '');
 
       card.innerHTML =
-        '<div class="g-cover-wrap"><div class="g-cover-jl"></div>' +
         (g.cover_url
           ? '<img class="g-cover" src="' + h(g.cover_url) + '" loading="lazy" onerror="this.style.display=\'none\'">'
           : '<div class="g-cover-ph">🎮</div>') +
-        '<div class="g-cover-jr"></div></div>' +
         '<div class="g-title">' + h(g.title) + '</div>' +
         (g.description
           ? '<div class="g-desc' + (isOpen ? ' open' : '') + '" id="gd-' + docId + '">' + h(g.description) + '</div>'
