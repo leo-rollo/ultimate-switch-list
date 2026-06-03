@@ -228,7 +228,7 @@ header {
 }
 .g-card:hover { box-shadow: var(--shadow-h); }
 .g-card.dl { background: #fff; border-color: var(--red); }
-.g-card.dl .g-title  { color: var(--text); }
+.g-card.dl .g-title  { background: var(--red); color: #fff; margin: 0; padding: 8px 10px 3px; }
 .g-card.dl .g-desc   { color: var(--muted); }
 .g-card.dl .g-footer { background: var(--red); }
 .g-card.dl .g-footer .btn-dl  { background: rgba(255,255,255,.25); color: #fff; border-color: rgba(255,255,255,.5); }
@@ -470,7 +470,7 @@ function renderAll() {
       card.innerHTML =
         '<div class="g-cover-wrap">' +
         (g.cover_url
-          ? '<img class="g-cover" src="' + h(g.cover_url) + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=\"g-cover-ph\">🎮</div>\'">'
+          ? '<img class="g-cover" src="' + h(g.cover_url) + '" loading="lazy" onerror="this.style.display='none'">'
           : '<div class="g-cover-ph">🎮</div>') +
         '</div>' +
         '<div class="g-title">' + h(g.title) + '</div>' +
