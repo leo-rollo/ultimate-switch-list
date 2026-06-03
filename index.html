@@ -249,6 +249,7 @@ header {
 .g-cover {
   flex: 1; height: 120px; object-fit: contain;
   display: block; background: #0f0f1a;
+  align-self: center;
 }
 .g-cover-ph {
   flex: 1; height: 120px; background: #0f0f1a;
@@ -468,9 +469,11 @@ function renderAll() {
       card.className = 'g-card' + (isDl ? ' dl' : '');
 
       card.innerHTML =
+        '<div class="g-cover-wrap"><div class="g-cover-jl"></div>' +
         (g.cover_url
           ? '<img class="g-cover" src="' + h(g.cover_url) + '" loading="lazy" onerror="this.style.display=\'none\'">'
           : '<div class="g-cover-ph">🎮</div>') +
+        '<div class="g-cover-jr"></div></div>' +
         '<div class="g-title">' + h(g.title) + '</div>' +
         (g.description
           ? '<div class="g-desc' + (isOpen ? ' open' : '') + '" id="gd-' + docId + '">' + h(g.description) + '</div>'
@@ -733,22 +736,23 @@ function h(s) {
 // ════════════════════════════════════════════════════════════
 // GOOGLE TRANSLATE API (gratuito até 500k chars/mês)
 // ════════════════════════════════════════════════════════════
-const GOOGLE_KEY = 'SUA_GOOGLE_TRANSLATE_KEY_AQUI';
-
+// ════════════════════════════════════════════════════════════
+// MYMEMORY — tradução gratuita, sem chave, sem cadastro
+// Limite: 5.000 chars/dia por IP
+// ════════════════════════════════════════════════════════════
 async function translateDesc(text) {
   if (!text || !text.trim()) return 'Sem descrição disponível.';
-  if (GOOGLE_KEY === 'SUA_GOOGLE_TRANSLATE_KEY_AQUI') return text;
   try {
-    const res = await fetch(
-      'https://translation.googleapis.com/language/translate/v2?key=' + GOOGLE_KEY,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: text, target: 'pt', format: 'text' })
-      }
-    );
+    const snippet = text.slice(0, 500);
+    const url = 'https://api.mymemory.translated.net/get?q='
+      + encodeURIComponent(snippet) + '&langpair=en|pt-BR';
+    const res  = await fetch(url);
     const data = await res.json();
-    return data?.data?.translations?.[0]?.translatedText || text;
+    const t = data?.responseData?.translatedText;
+    if (t && t !== snippet.toUpperCase()) {
+      return t + (text.length > 500 ? '…' : '');
+    }
+    return text;
   } catch(e) {
     return text;
   }
