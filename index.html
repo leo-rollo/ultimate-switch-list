@@ -388,76 +388,96 @@ header {
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- FIREBASE SDK (compat — funciona sem bundler) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+<!-- FIREBASE REALTIME DATABASE — sem SDK, REST puro -->
 <script>
-const firebaseConfig = {
-  apiKey:            "AIzaSyD22z57B7JMSGxz98lpjc7u3dTFzBBQvLM",
-  authDomain:        "ultimate-switch-list.firebaseapp.com",
-  projectId:         "ultimate-switch-list",
-  storageBucket:     "ultimate-switch-list.firebasestorage.app",
-  messagingSenderId: "50151813128",
-  appId:             "1:50151813128:web:7403b7f62c0935edaee1bd"
-};
-
-// ② SUBSTITUA com sua chave do rawg.io
 const RAWG_KEY = "98bd2933ccba4ea3b0815b21bd27e4ee";
-
-// ════════════════════════════════════════════════════════════
-// FIREBASE INIT
-// ════════════════════════════════════════════════════════════
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-db.settings({ experimentalForceLongPolling: true, merge: true });
-const gamesCol = db.collection('games');
+const RTDB = "https://ultimate-switch-list-default-rtdb.firebaseio.com";
 
 // ════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════
-let games        = {};   // { docId: { rawgId, title, cover, desc, lista, downloaded } }
-let pending      = null; // jogo aguardando add
-let pendingRemId = null; // rawg_id aguardando remoção
-let openDescs    = new Set(); // docIds com descrição expandida na lista
-let descCache    = {};   // rawgId → descrição (cache local)
+let games        = {};
+let pending      = null;
+let pendingRemId = null;
+let openDescs    = new Set();
+let descCache    = {};
 let searchTimer  = null;
 
 // ════════════════════════════════════════════════════════════
-// REALTIME LISTENER — onSnapshot
-// Qualquer alteração no Firestore chega aqui para os dois usuários
+// REALTIME DATABASE — REST + SSE listener
 // ════════════════════════════════════════════════════════════
-let snapshotUnsub = null;
+function startRTDB() {
+  // SSE (Server-Sent Events) — Realtime Database suporta nativamente
+  const es = new EventSource(RTDB + '/games.json');
 
-function startSnapshot() {
-  if (snapshotUnsub) snapshotUnsub();
-  snapshotUnsub = gamesCol.onSnapshot(
-    snap => {
-      games = {};
-      snap.forEach(doc => { games[doc.id] = doc.data(); });
-      renderAll();
-      setRt(true);
-    },
-    err => {
-      console.error('Firestore error:', err.code, err.message);
-      setRt(false, err.code);
-      // Retry after 5s
-      setTimeout(startSnapshot, 5000);
+  es.addEventListener('put', e => {
+    const msg  = JSON.parse(e.data);
+    const path = msg.path;
+    const data = msg.data;
+
+    if (path === '/') {
+      // Carga inicial completa
+      games = data || {};
+    } else {
+      // Atualização pontual
+      const key = path.replace('/', '');
+      if (data === null) {
+        delete games[key];
+      } else {
+        games[key] = data;
+      }
     }
-  );
+    renderAll();
+    setRt(true);
+  });
+
+  es.addEventListener('patch', e => {
+    const msg  = JSON.parse(e.data);
+    const data = msg.data || {};
+    Object.assign(games, data);
+    renderAll();
+    setRt(true);
+  });
+
+  es.onerror = () => {
+    setRt(false);
+    es.close();
+    setTimeout(startRTDB, 4000);
+  };
 }
 
-startSnapshot();
+function setRt(on) {
+  document.getElementById('rt-dot').className   = 'rt-dot' + (on ? '' : ' off');
+  document.getElementById('rt-label').textContent = on ? 'Ao vivo' : 'Reconectando...';
+}
 
-function setRt(on, errCode) {
-  document.getElementById('rt-dot').className = 'rt-dot' + (on ? '' : ' off');
-  if (on) {
-    document.getElementById('rt-label').textContent = 'Ao vivo';
-  } else if (errCode === 'permission-denied' || errCode === 'PERMISSION_DENIED') {
-    document.getElementById('rt-label').textContent = 'Erro: regras Firestore';
-  } else {
-    document.getElementById('rt-label').textContent = 'Reconectando...';
-  }
+// ════════════════════════════════════════════════════════════
+// CRUD — REST simples
+// ════════════════════════════════════════════════════════════
+async function dbPush(obj) {
+  const res = await fetch(RTDB + '/games.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(obj)
+  });
+  return res.json();
+}
+
+async function dbPatch(key, obj) {
+  await fetch(RTDB + '/games/' + key + '.json', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(obj)
+  });
+}
+
+async function dbDelete(key) {
+  await fetch(RTDB + '/games/' + key + '.json', { method: 'DELETE' });
+}
+
+async function dbGetAll() {
+  const res = await fetch(RTDB + '/games.json');
+  return res.json();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -465,7 +485,7 @@ function setRt(on, errCode) {
 // ════════════════════════════════════════════════════════════
 function renderAll() {
   ['principais','cozy','quatroqueijos'].forEach(lista => {
-    const items  = Object.entries(games).filter(([,g]) => g.lista === lista);
+    const items  = Object.entries(games).filter(([,g]) => g && g.lista === lista);
     const listEl = document.getElementById('list-' + lista);
     const cntEl  = document.getElementById('n-' + lista);
     cntEl.textContent = items.length;
@@ -476,9 +496,9 @@ function renderAll() {
     }
 
     listEl.innerHTML = '';
-    items.forEach(([docId, g]) => {
+    items.forEach(([key, g]) => {
       const isDl   = !!g.downloaded;
-      const isOpen = openDescs.has(docId);
+      const isOpen = openDescs.has(key);
 
       const card = document.createElement('div');
       card.className = 'g-card' + (isDl ? ' dl' : '');
@@ -491,26 +511,26 @@ function renderAll() {
         '</div>' +
         '<div class="g-title">' + h(g.title) + '</div>' +
         (g.description
-          ? '<div class="g-desc' + (isOpen ? ' open' : '') + '" id="gd-' + docId + '">' + h(g.description) + '</div>'
+          ? '<div class="g-desc' + (isOpen ? ' open' : '') + '" id="gd-' + key + '">' + h(g.description) + '</div>'
           : '') +
         '<div class="g-footer">' +
-          '<button class="btn-dl' + (isDl ? ' on' : '') + '" onclick="event.stopPropagation();toggleDl(\'' + docId + '\',' + isDl + ')">' +
+          '<button class="btn-dl' + (isDl ? ' on' : '') + '" onclick="event.stopPropagation();toggleDl('' + key + '',' + isDl + ')">' +
             (isDl ? '✓ Baixado' : '⬇ Baixado') +
           '</button>' +
-          '<button class="btn-rm" onclick="event.stopPropagation();openRem(\'' + docId + '\',\'' + h(g.title) + '\')">Remover</button>' +
+          '<button class="btn-rm" onclick="event.stopPropagation();openRem('' + key + '','' + h(g.title) + '')">Remover</button>' +
         '</div>';
 
-      card.addEventListener('click', () => toggleDesc(docId));
+      card.addEventListener('click', () => toggleDesc(key));
       listEl.appendChild(card);
     });
   });
 }
 
-function toggleDesc(docId) {
-  const el = document.getElementById('gd-' + docId);
+function toggleDesc(key) {
+  const el = document.getElementById('gd-' + key);
   if (!el) return;
-  if (openDescs.has(docId)) { openDescs.delete(docId); el.classList.remove('open'); }
-  else                       { openDescs.add(docId);    el.classList.add('open'); }
+  if (openDescs.has(key)) { openDescs.delete(key); el.classList.remove('open'); }
+  else                     { openDescs.add(key);    el.classList.add('open'); }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -532,20 +552,20 @@ function clearQ() {
   wrap.innerHTML = '';
 }
 
+function goHome() {
+  clearQ();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 async function search(q) {
   const wrap = document.getElementById('results-wrap');
-  if (!RAWG_KEY || RAWG_KEY === 'SUA_RAWG_KEY_AQUI') {
-    wrap.innerHTML = '<div class="results-msg">⚠️ Chave RAWG não configurada.</div>';
-    wrap.classList.add('show');
-    return;
-  }
   wrap.innerHTML = '<div class="results-msg">Buscando...</div>';
   wrap.classList.add('show');
   try {
     const url = 'https://api.rawg.io/api/games'
       + '?key=' + RAWG_KEY
       + '&search=' + encodeURIComponent(q)
-      + '&platforms=7'           // 7 = Nintendo Switch
+      + '&platforms=7'
       + '&page_size=6'
       + '&exclude_additions=true';
     const res  = await fetch(url);
@@ -560,18 +580,15 @@ async function search(q) {
 }
 
 function buildSearchCard(hit) {
-  // verifica se jogo já está em alguma lista
-  const inList = Object.values(games).find(g => g.rawg_id === hit.id);
+  const inList = Object.values(games).find(g => g && g.rawg_id === hit.id);
   const year   = (hit.released || '').slice(0, 4);
-
   const card   = document.createElement('div');
   card.className = 's-card';
   card.id = 'sc-' + hit.id;
-
   card.innerHTML =
     '<div class="s-card-top" onclick="toggleSDesc(' + hit.id + ')">' +
       (hit.background_image
-        ? '<img class="s-cover" src="' + h(hit.background_image) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+        ? '<img class="s-cover" src="' + h(hit.background_image) + '" loading="lazy" onerror="this.style.display='none'">'
         : '<div class="s-cover-ph">🎮</div>') +
       '<div class="s-info">' +
         '<div class="s-title">' + h(hit.name) + '</div>' +
@@ -582,17 +599,16 @@ function buildSearchCard(hit) {
     '<div class="s-actions" id="sa-' + hit.id + '">' +
       buildSearchBtn(hit, inList) +
     '</div>';
-
   return card;
 }
 
 function buildSearchBtn(hit, inList) {
   if (inList) {
-    return '<button class="btn btn-rem" onclick="openRemFromSearch(' + hit.id + ',\'' + h(hit.name) + '\')">'
+    return '<button class="btn btn-rem" onclick="openRemFromSearch(' + hit.id + ','' + h(hit.name) + '')">'
          + 'Retirar da lista</button>';
   }
-  return '<button class="btn btn-add" onclick="openAdd(' + hit.id + ',\'' + h(hit.name) + '\',\''
-       + h(hit.background_image || '') + '\')">'
+  return '<button class="btn btn-add" onclick="openAdd(' + hit.id + ','' + h(hit.name) + '',''
+       + h(hit.background_image || '') + '')">'
        + '+ Adicionar à lista</button>';
 }
 
@@ -606,12 +622,7 @@ async function toggleSDesc(rawgId) {
     const res  = await fetch('https://api.rawg.io/api/games/' + rawgId + '?key=' + RAWG_KEY);
     const data = await res.json();
     const raw  = (data.description_raw || '').trim();
-    if (raw) {
-      const translated = await translateDesc(raw.slice(0, 800));
-      descCache[rawgId] = translated;
-    } else {
-      descCache[rawgId] = 'Sem descrição disponível.';
-    }
+    descCache[rawgId] = raw ? await translateDesc(raw.slice(0, 800)) : 'Sem descrição disponível.';
   } catch { descCache[rawgId] = 'Sem descrição disponível.'; }
   el.textContent = descCache[rawgId];
 }
@@ -629,46 +640,38 @@ async function doAdd(lista) {
   if (!pending) return;
   closePop('pop-add');
 
-  // busca descrição se ainda não tiver em cache
   let desc = descCache[pending.rawgId] || '';
   if (!desc) {
     try {
       const res  = await fetch('https://api.rawg.io/api/games/' + pending.rawgId + '?key=' + RAWG_KEY);
       const data = await res.json();
       const raw  = (data.description_raw || '').trim();
-      if (raw) {
-        desc = await translateDesc(raw.slice(0, 800));
-        descCache[pending.rawgId] = desc;
-      } else {
-        desc = 'Sem descrição disponível.';
-        descCache[pending.rawgId] = desc;
-      }
+      desc = raw ? await translateDesc(raw.slice(0, 800)) : '';
+      descCache[pending.rawgId] = desc || 'Sem descrição disponível.';
     } catch { desc = ''; }
   }
 
+  // Se jogo já existe em outra lista, move; senão cria
+  const existing = Object.entries(games).find(([,g]) => g && g.rawg_id === pending.rawgId);
   try {
-    // Se já existe um doc com esse rawg_id, atualiza a lista; senão cria
-    const existing = Object.entries(games).find(([,g]) => g.rawg_id === pending.rawgId);
     if (existing) {
-      await gamesCol.doc(existing[0]).update({ lista, downloaded: false });
+      await dbPatch(existing[0], { lista, downloaded: false });
     } else {
-      await gamesCol.add({
-        rawg_id:     pending.rawgId,
-        title:       pending.name,
-        cover_url:   pending.cover,
+      await dbPush({
+        rawg_id:    pending.rawgId,
+        title:      pending.name,
+        cover_url:  pending.cover,
         description: desc,
         lista,
-        downloaded:  false,
-        created_at:  firebase.firestore.FieldValue.serverTimestamp()
+        downloaded: false,
+        created_at: Date.now()
       });
     }
     showToast('✓ Adicionado a ' + lista.charAt(0).toUpperCase() + lista.slice(1));
   } catch(e) {
-    console.error(e);
-    showToast('Erro ao adicionar. Tente novamente.');
+    showToast('Erro ao adicionar.');
   }
 
-  // Atualiza botão do card de busca
   refreshSearchBtn(pending.rawgId, pending.name, pending.cover);
   pending = null;
 }
@@ -676,8 +679,8 @@ async function doAdd(lista) {
 // ════════════════════════════════════════════════════════════
 // REMOVE
 // ════════════════════════════════════════════════════════════
-function openRem(docId, name) {
-  pendingRemId = { docId, fromSearch: false };
+function openRem(key, name) {
+  pendingRemId = { key, fromSearch: false };
   document.getElementById('pop-rem-name').textContent = name;
   document.getElementById('pop-rem').classList.add('open');
 }
@@ -693,27 +696,22 @@ async function doRemove() {
   if (!pendingRemId) return;
   try {
     if (pendingRemId.fromSearch) {
-      // acha o docId pelo rawg_id
-      const entry = Object.entries(games).find(([,g]) => g.rawg_id === pendingRemId.rawgId);
-      if (entry) await gamesCol.doc(entry[0]).delete();
-      refreshSearchBtn(pendingRemId.rawgId, '', '');
+      const entry = Object.entries(games).find(([,g]) => g && g.rawg_id === pendingRemId.rawgId);
+      if (entry) { await dbDelete(entry[0]); refreshSearchBtn(pendingRemId.rawgId, '', ''); }
     } else {
-      await gamesCol.doc(pendingRemId.docId).delete();
+      await dbDelete(pendingRemId.key);
     }
     showToast('Jogo removido da lista');
-  } catch(e) {
-    showToast('Erro ao remover.');
-  }
+  } catch { showToast('Erro ao remover.'); }
   pendingRemId = null;
 }
 
 // ════════════════════════════════════════════════════════════
 // TOGGLE DOWNLOADED
 // ════════════════════════════════════════════════════════════
-async function toggleDl(docId, current) {
-  try {
-    await gamesCol.doc(docId).update({ downloaded: !current });
-  } catch(e) { showToast('Erro ao atualizar.'); }
+async function toggleDl(key, current) {
+  try { await dbPatch(key, { downloaded: !current }); }
+  catch { showToast('Erro ao atualizar.'); }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -722,14 +720,12 @@ async function toggleDl(docId, current) {
 function closePop(id) { document.getElementById(id).classList.remove('open'); }
 
 function refreshSearchBtn(rawgId, name, cover) {
-  // Aguarda onSnapshot atualizar `games`, depois re-renderiza o botão
   setTimeout(() => {
     const actionsEl = document.getElementById('sa-' + rawgId);
     if (!actionsEl) return;
-    const inList = Object.values(games).find(g => g.rawg_id === rawgId);
-    const fakeHit = { id: rawgId, name, background_image: cover };
-    actionsEl.innerHTML = buildSearchBtn(fakeHit, inList);
-  }, 600);
+    const inList = Object.values(games).find(g => g && g.rawg_id === rawgId);
+    actionsEl.innerHTML = buildSearchBtn({ id: rawgId, name, background_image: cover }, inList);
+  }, 800);
 }
 
 let toastTimer;
@@ -741,7 +737,6 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// Escapa HTML para prevenir XSS
 function h(s) {
   return String(s || '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -749,11 +744,7 @@ function h(s) {
 }
 
 // ════════════════════════════════════════════════════════════
-// GOOGLE TRANSLATE API (gratuito até 500k chars/mês)
-// ════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════
-// MYMEMORY — tradução gratuita, sem chave, sem cadastro
-// Limite: 5.000 chars/dia por IP
+// MYMEMORY TRANSLATION
 // ════════════════════════════════════════════════════════════
 async function translateDesc(text) {
   if (!text || !text.trim()) return 'Sem descrição disponível.';
@@ -768,19 +759,13 @@ async function translateDesc(text) {
       return t + (text.length > 500 ? '…' : '');
     }
     return text;
-  } catch(e) {
-    return text;
-  }
+  } catch { return text; }
 }
 
 // ════════════════════════════════════════════════════════════
-// HOME — clique no logo fecha a busca
+// START
 // ════════════════════════════════════════════════════════════
-function goHome() {
-  clearQ();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
+startRTDB();
 </script>
 </body>
 </html>
