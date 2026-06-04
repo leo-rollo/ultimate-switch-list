@@ -654,20 +654,24 @@ function buildSearchCard(hit) {
   const actions = document.createElement('div');
   actions.className = 's-actions';
   actions.id = 'sa-' + hit.id;
-  actions.innerHTML = buildSearchBtn(hit, inList);
+  actions.appendChild(buildSearchBtn(hit, inList));
   card.appendChild(actions);
 
   return card;
 }
 
 function buildSearchBtn(hit, inList) {
+  const btn = document.createElement('button');
   if (inList) {
-    return '<button class="btn btn-rem" onclick="openRemFromSearch(' + hit.id + ','' + h(hit.name) + '')">'
-         + 'Retirar da lista</button>';
+    btn.className = 'btn btn-rem';
+    btn.textContent = 'Retirar da lista';
+    btn.onclick = function() { openRemFromSearch(hit.id, hit.name); };
+  } else {
+    btn.className = 'btn btn-add';
+    btn.textContent = '+ Adicionar à lista';
+    btn.onclick = function() { openAdd(hit.id, hit.name, hit.background_image || ''); };
   }
-  return '<button class="btn btn-add" onclick="openAdd(' + hit.id + ','' + h(hit.name) + '',''
-       + h(hit.background_image || '') + '')">'
-       + '+ Adicionar à lista</button>';
+  return btn;
 }
 
 async function toggleSDesc(rawgId) {
@@ -782,7 +786,8 @@ function refreshSearchBtn(rawgId, name, cover) {
     const actionsEl = document.getElementById('sa-' + rawgId);
     if (!actionsEl) return;
     const inList = Object.values(games).find(g => g && g.rawg_id === rawgId);
-    actionsEl.innerHTML = buildSearchBtn({ id: rawgId, name, background_image: cover }, inList);
+    actionsEl.innerHTML = '';
+    actionsEl.appendChild(buildSearchBtn({ id: rawgId, name, background_image: cover }, inList));
   }, 800);
 }
 
