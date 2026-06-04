@@ -760,15 +760,31 @@ function openRemFromSearch(rawgId, name) {
 async function doRemove() {
   closePop('pop-rem');
   if (!pendingRemId) return;
+
+  let keyToDelete = null;
+  let rawgIdToRefresh = null;
+
+  if (pendingRemId.fromSearch) {
+    const entry = Object.entries(games).find(([,g]) => g && g.rawg_id === pendingRemId.rawgId);
+    if (entry) { keyToDelete = entry[0]; rawgIdToRefresh = pendingRemId.rawgId; }
+  } else {
+    keyToDelete = pendingRemId.key;
+  }
+
+  // Remove localmente de imediato
+  if (keyToDelete && games[keyToDelete]) {
+    delete games[keyToDelete];
+    renderAll();
+    if (rawgIdToRefresh !== null) refreshSearchBtn(rawgIdToRefresh, '', '');
+  }
+
+  // Persiste no Firebase
   try {
-    if (pendingRemId.fromSearch) {
-      const entry = Object.entries(games).find(([,g]) => g && g.rawg_id === pendingRemId.rawgId);
-      if (entry) { await dbDelete(entry[0]); refreshSearchBtn(pendingRemId.rawgId, '', ''); }
-    } else {
-      await dbDelete(pendingRemId.key);
-    }
+    if (keyToDelete) await dbDelete(keyToDelete);
     showToast('Jogo removido da lista');
-  } catch(e) { showToast('Erro ao remover.'); }
+  } catch(e) {
+    showToast('Erro ao remover.');
+  }
   pendingRemId = null;
 }
 
@@ -776,8 +792,16 @@ async function doRemove() {
 // TOGGLE DOWNLOADED
 // ════════════════════════════════════════════════════════════
 async function toggleDl(key, current) {
-  try { await dbPatch(key, { downloaded: !current }); }
-  catch(e) { showToast('Erro ao atualizar.'); }
+  const newVal = !current;
+  // Atualiza UI imediatamente (optimistic update)
+  if (games[key]) { games[key].downloaded = newVal; renderAll(); }
+  // Persiste no Firebase
+  try { await dbPatch(key, { downloaded: newVal }); }
+  catch(e) {
+    // Reverte se falhar
+    if (games[key]) { games[key].downloaded = current; renderAll(); }
+    showToast('Erro ao atualizar.');
+  }
 }
 
 // ════════════════════════════════════════════════════════════
