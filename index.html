@@ -503,22 +503,56 @@ function renderAll() {
       const card = document.createElement('div');
       card.className = 'g-card' + (isDl ? ' dl' : '');
 
-      card.innerHTML =
-        '<div class="g-cover-wrap">' +
-        (g.cover_url
-          ? '<img class="g-cover" src="' + h(g.cover_url) + '" loading="lazy" onerror="this.style.display='none'">'
-          : '<div class="g-cover-ph">🎮</div>') +
-        '</div>' +
-        '<div class="g-title">' + h(g.title) + '</div>' +
-        (g.description
-          ? '<div class="g-desc' + (isOpen ? ' open' : '') + '" id="gd-' + key + '">' + h(g.description) + '</div>'
-          : '') +
-        '<div class="g-footer">' +
-          '<button class="btn-dl' + (isDl ? ' on' : '') + '" onclick="event.stopPropagation();toggleDl('' + key + '',' + isDl + ')">' +
-            (isDl ? '✓ Baixado' : '⬇ Baixado') +
-          '</button>' +
-          '<button class="btn-rm" onclick="event.stopPropagation();openRem('' + key + '','' + h(g.title) + '')">Remover</button>' +
-        '</div>';
+      // cover
+      const wrap = document.createElement('div');
+      wrap.className = 'g-cover-wrap';
+      if (g.cover_url) {
+        const img = document.createElement('img');
+        img.className = 'g-cover';
+        img.src = g.cover_url;
+        img.loading = 'lazy';
+        img.onerror = function() { this.style.display = 'none'; };
+        wrap.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'g-cover-ph';
+        ph.textContent = '🎮';
+        wrap.appendChild(ph);
+      }
+      card.appendChild(wrap);
+
+      // title
+      const titleEl = document.createElement('div');
+      titleEl.className = 'g-title';
+      titleEl.textContent = g.title;
+      card.appendChild(titleEl);
+
+      // description
+      if (g.description) {
+        const descEl = document.createElement('div');
+        descEl.className = 'g-desc' + (isOpen ? ' open' : '');
+        descEl.id = 'gd-' + key;
+        descEl.textContent = g.description;
+        card.appendChild(descEl);
+      }
+
+      // footer
+      const footer = document.createElement('div');
+      footer.className = 'g-footer';
+
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'btn-dl' + (isDl ? ' on' : '');
+      dlBtn.textContent = isDl ? '✓ Baixado' : '⬇ Baixado';
+      dlBtn.onclick = function(ev) { ev.stopPropagation(); toggleDl(key, isDl); };
+      footer.appendChild(dlBtn);
+
+      const rmBtn = document.createElement('button');
+      rmBtn.className = 'btn-rm';
+      rmBtn.textContent = 'Remover';
+      rmBtn.onclick = function(ev) { ev.stopPropagation(); openRem(key, g.title); };
+      footer.appendChild(rmBtn);
+
+      card.appendChild(footer);
 
       card.addEventListener('click', () => toggleDesc(key));
       listEl.appendChild(card);
@@ -585,20 +619,44 @@ function buildSearchCard(hit) {
   const card   = document.createElement('div');
   card.className = 's-card';
   card.id = 'sc-' + hit.id;
-  card.innerHTML =
-    '<div class="s-card-top" onclick="toggleSDesc(' + hit.id + ')">' +
-      (hit.background_image
-        ? '<img class="s-cover" src="' + h(hit.background_image) + '" loading="lazy" onerror="this.style.display='none'">'
-        : '<div class="s-cover-ph">🎮</div>') +
-      '<div class="s-info">' +
-        '<div class="s-title">' + h(hit.name) + '</div>' +
-        '<div class="s-meta">' + (year ? year + ' · ' : '') + 'Nintendo Switch</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="s-desc" id="sd-' + hit.id + '">Carregando...</div>' +
-    '<div class="s-actions" id="sa-' + hit.id + '">' +
-      buildSearchBtn(hit, inList) +
-    '</div>';
+  // top (cover + info) — clicável para expandir descrição
+  const top = document.createElement('div');
+  top.className = 's-card-top';
+  top.onclick = function() { toggleSDesc(hit.id); };
+
+  if (hit.background_image) {
+    const img = document.createElement('img');
+    img.className = 's-cover';
+    img.src = hit.background_image;
+    img.loading = 'lazy';
+    img.onerror = function() { this.style.display = 'none'; };
+    top.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 's-cover-ph';
+    ph.textContent = '🎮';
+    top.appendChild(ph);
+  }
+
+  const info = document.createElement('div');
+  info.className = 's-info';
+  info.innerHTML = '<div class="s-title">' + h(hit.name) + '</div>'
+    + '<div class="s-meta">' + (year ? year + ' · ' : '') + 'Nintendo Switch</div>';
+  top.appendChild(info);
+  card.appendChild(top);
+
+  const descEl = document.createElement('div');
+  descEl.className = 's-desc';
+  descEl.id = 'sd-' + hit.id;
+  descEl.textContent = 'Carregando...';
+  card.appendChild(descEl);
+
+  const actions = document.createElement('div');
+  actions.className = 's-actions';
+  actions.id = 'sa-' + hit.id;
+  actions.innerHTML = buildSearchBtn(hit, inList);
+  card.appendChild(actions);
+
   return card;
 }
 
