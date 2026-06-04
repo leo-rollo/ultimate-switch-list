@@ -623,7 +623,7 @@ async function toggleSDesc(rawgId) {
     const data = await res.json();
     const raw  = (data.description_raw || '').trim();
     descCache[rawgId] = raw ? await translateDesc(raw.slice(0, 800)) : 'Sem descrição disponível.';
-  } catch { descCache[rawgId] = 'Sem descrição disponível.'; }
+  } catch(e) { descCache[rawgId] = 'Sem descrição disponível.'; }
   el.textContent = descCache[rawgId];
 }
 
@@ -648,7 +648,7 @@ async function doAdd(lista) {
       const raw  = (data.description_raw || '').trim();
       desc = raw ? await translateDesc(raw.slice(0, 800)) : '';
       descCache[pending.rawgId] = desc || 'Sem descrição disponível.';
-    } catch { desc = ''; }
+    } catch(e) { desc = ''; }
   }
 
   // Se jogo já existe em outra lista, move; senão cria
@@ -702,7 +702,7 @@ async function doRemove() {
       await dbDelete(pendingRemId.key);
     }
     showToast('Jogo removido da lista');
-  } catch { showToast('Erro ao remover.'); }
+  } catch(e) { showToast('Erro ao remover.'); }
   pendingRemId = null;
 }
 
@@ -759,7 +759,7 @@ async function translateDesc(text) {
       return t + (text.length > 500 ? '…' : '');
     }
     return text;
-  } catch { return text; }
+  } catch(e) { return text; }
 }
 
 // ════════════════════════════════════════════════════════════
