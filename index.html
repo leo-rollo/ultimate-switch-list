@@ -406,43 +406,47 @@ let searchTimer  = null;
 // ════════════════════════════════════════════════════════════
 // REALTIME DATABASE — REST + SSE listener
 // ════════════════════════════════════════════════════════════
+// Debounce renderAll — evita re-renders em cascata
+let renderTimer = null;
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderAll, 80);
+}
+
 function startRTDB() {
-  // SSE (Server-Sent Events) — Realtime Database suporta nativamente
   const es = new EventSource(RTDB + '/games.json');
 
   es.addEventListener('put', e => {
-    const msg  = JSON.parse(e.data);
-    const path = msg.path;
-    const data = msg.data;
-
-    if (path === '/') {
-      // Carga inicial completa
-      games = data || {};
-    } else {
-      // Atualização pontual
-      const key = path.replace('/', '');
-      if (data === null) {
-        delete games[key];
+    try {
+      const msg  = JSON.parse(e.data);
+      const path = msg.path;
+      const data = msg.data;
+      if (path === '/') {
+        games = data || {};
       } else {
-        games[key] = data;
+        const key = path.replace('/', '');
+        if (data === null) { delete games[key]; }
+        else { games[key] = data; }
       }
-    }
-    renderAll();
-    setRt(true);
+      setRt(true);
+      scheduleRender();
+    } catch(e) {}
   });
 
   es.addEventListener('patch', e => {
-    const msg  = JSON.parse(e.data);
-    const data = msg.data || {};
-    Object.assign(games, data);
-    renderAll();
-    setRt(true);
+    try {
+      const msg  = JSON.parse(e.data);
+      const data = msg.data || {};
+      Object.assign(games, data);
+      setRt(true);
+      scheduleRender();
+    } catch(e) {}
   });
 
   es.onerror = () => {
     setRt(false);
     es.close();
-    setTimeout(startRTDB, 4000);
+    setTimeout(startRTDB, 5000);
   };
 }
 
@@ -773,7 +777,7 @@ async function doRemove() {
 // ════════════════════════════════════════════════════════════
 async function toggleDl(key, current) {
   try { await dbPatch(key, { downloaded: !current }); }
-  catch { showToast('Erro ao atualizar.'); }
+  catch(e) { showToast('Erro ao atualizar.'); }
 }
 
 // ════════════════════════════════════════════════════════════
